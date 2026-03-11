@@ -11,10 +11,10 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_subdirectory(tcp)
 
 add_subdirectory(client)
-# add_subdirectory(server)
+add_subdirectory(server)
 # add_subdirectory(statistic)
 
-add_custom_target(all_targets ALL
-    DEPENDS client server statistic
-    COMMENT "Building all targets"
-)
+# add_custom_target(all_targets ALL
+#     DEPENDS client server statistic
+#     COMMENT "Building all targets"
+# )
