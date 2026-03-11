@@ -12,8 +12,6 @@ namespace Win32 {
 #include <stdexcept>
 #include <memory>
 
-#pragma comment(lib, "ws2_32.lib")
-
 
 class WinsockInitializer {
 public:

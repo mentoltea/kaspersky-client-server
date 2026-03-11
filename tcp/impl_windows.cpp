@@ -106,11 +106,11 @@ std::unique_ptr<I_TCPSocket_impl> WindowsServerImpl::accept() {
     return std::make_unique<WindowsAcceptedImpl>(clientSocket);
 }
 
-void WindowsServerImpl::send(const std::string& data) {
+void WindowsServerImpl::send(const std::string& /*data*/) {
     throw std::runtime_error("Cannot send on server socket - use accept() first");
 }
 
-std::string WindowsServerImpl::receive(size_t bufferSize) {
+std::string WindowsServerImpl::receive(size_t /*bufferSize*/) {
     throw std::runtime_error("Cannot receive on server socket - use accept() first");
 }
 

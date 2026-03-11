@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
             size_t chunkSize = 1024;
             std::string buffer;
             while (readSize < filesize) {
-                std::string chunk = clientConn->receive();
+                std::string chunk = clientConn->receive(chunkSize);
                 readSize += chunk.size();
                 std::cout << readSize << "/" << filesize << std::endl;
             }
@@ -84,7 +84,7 @@ int main(int argc, char** argv) {
                 }
             )";
             clientConn->send(result);
-        } catch (std::exception e) {
+        } catch (std::runtime_error &e) {
             std::cerr << e.what() << std::endl;
         }
     }
