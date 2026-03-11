@@ -29,7 +29,9 @@ std::unique_ptr<TCPSocket> TCPServer::accept() {
     
     auto acceptedImpl = pimpl->accept();
     
-    return std::make_unique<TCPSocket>(std::move(acceptedImpl));
+    return std::unique_ptr<TCPSocket>(
+        new TCPSocket(std::move(acceptedImpl))
+    );
 }
 
 void TCPServer::close() {

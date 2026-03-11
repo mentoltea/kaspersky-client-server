@@ -28,7 +28,12 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    TCP::TCPServer("0.0.0.0", 443);
+    TCPServer server("0.0.0.0", 443);
+
+    server.listen(10);
+    server.accept();
+
+    std::cout << "Accepted" << std::endl;
 
     return 0;
 }
