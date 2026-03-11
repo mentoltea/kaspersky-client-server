@@ -1,0 +1,28 @@
+#include "factory.h"
+
+
+#ifdef _WIN32
+    #include "impl_windows.h"
+#else
+    #error "Only windows supported yet"
+#endif
+
+std::unique_ptr<I_TCPServer_impl> SocketFactory::createServerImpl(const std::string& address, int port) {
+
+#ifdef _WIN32
+    return std::make_unique<WindowsServerImpl>(port, address);
+#else
+    #error "Only windows supported yet"
+#endif
+
+}
+
+std::unique_ptr<I_TCPClient_impl> SocketFactory::createClientImpl() {
+
+#ifdef _WIN32
+    return std::make_unique<WindowsClientImpl>();
+#else
+    #error "Only windows supported yet"
+#endif
+
+}
