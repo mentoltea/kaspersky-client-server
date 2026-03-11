@@ -1,5 +1,6 @@
 #include "socket.h"
 #include "interface.h"
+#include "transfer_factory.h"
 #include <stdexcept>
 
 TCPSocket::TCPSocket(std::unique_ptr<I_TCPSocket_impl> impl)
@@ -39,4 +40,18 @@ void TCPSocket::close() {
 
 bool TCPSocket::isOpen() const {
     return pimpl && pimpl->isOpen();
+}
+
+SocketTransferToken TCPSocket::prepareForTransfer(pid_t targetPid) {
+    if (!pimpl) throw std::runtime_error("Socket not initialized");
+    
+    return SocketTransferFactory::createToken(*pimpl, targetPid);
+}
+
+std::unique_ptr<TCPSocket> TCPSocket::fromTransferToken(const SocketTransferToken& token) {
+    if (!token.isValid()) {
+        throw std::runtime_error("Invalid transfer token");
+    }
+    auto impl = SocketTransferFactory::createImplFromToken(token);
+    return std::unique_ptr<TCPSocket>(new TCPSocket(std::move(impl)));
 }

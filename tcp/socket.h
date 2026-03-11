@@ -4,6 +4,8 @@
 #include <string>
 #include <memory>
 
+#include "transfer_token.h"
+
 class I_TCPSocket_impl;
 
 // для принятых клиентских соединений
@@ -22,6 +24,9 @@ public:
     
     void close();
     bool isOpen() const;
+
+    SocketTransferToken prepareForTransfer(pid_t targetPid);    
+    static std::unique_ptr<TCPSocket> fromTransferToken(const SocketTransferToken& token);
 
 private:
     friend class TCPServer;

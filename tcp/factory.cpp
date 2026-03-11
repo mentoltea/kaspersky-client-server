@@ -10,7 +10,7 @@
 std::unique_ptr<I_TCPServer_impl> SocketFactory::createServerImpl(const std::string& address, int port) {
 
 #ifdef _WIN32
-    return std::make_unique<WindowsServerImpl>(port, address);
+    return std::make_unique<WinTCPServerImpl>(address, port);
 #else
     #error "Only windows supported yet"
 #endif
@@ -20,7 +20,7 @@ std::unique_ptr<I_TCPServer_impl> SocketFactory::createServerImpl(const std::str
 std::unique_ptr<I_TCPClient_impl> SocketFactory::createClientImpl() {
 
 #ifdef _WIN32
-    return std::make_unique<WindowsClientImpl>();
+    return std::make_unique<WinTCPClientImpl>();
 #else
     #error "Only windows supported yet"
 #endif
