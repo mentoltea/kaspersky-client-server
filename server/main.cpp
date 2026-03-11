@@ -6,6 +6,7 @@
 #include <charconv>
 
 #include "tcp/tcp.h"
+#include "fifo/fifo.h"
 
 #include "thirdparty/nlohmann/json.hpp"
 using json = nlohmann::json;

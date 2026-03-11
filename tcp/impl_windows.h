@@ -2,8 +2,12 @@
 #define TCP_IMPL_WINDOWS_H
 
 #include "interface.h"
-#include <winsock2.h>
-#include <ws2tcpip.h>
+
+namespace Win32 {
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
+}
+
 #include <string>
 #include <stdexcept>
 #include <memory>
@@ -41,7 +45,7 @@ public:
     bool isOpen() const override;
 
 private:
-    SOCKET serverSocket;
+    Win32::SOCKET serverSocket;
     bool isListening;
     bool isBound;
     
@@ -62,7 +66,7 @@ public:
     bool isOpen() const override;
 
 private:
-    SOCKET clientSocket;
+    Win32::SOCKET clientSocket;
     bool isConnected;
     
     void checkError(bool condition, const std::string& message);
@@ -72,7 +76,7 @@ private:
 
 class WindowsAcceptedImpl : public I_TCPSocket_impl {
 public:
-    explicit WindowsAcceptedImpl(SOCKET acceptedSocket);
+    explicit WindowsAcceptedImpl(Win32::SOCKET acceptedSocket);
     ~WindowsAcceptedImpl() override;
 
     void send(const std::string& data) override;
@@ -81,7 +85,7 @@ public:
     bool isOpen() const override;
 
 private:
-    SOCKET clientSocket;
+    Win32::SOCKET clientSocket;
     bool isConnected;
     
     void checkError(bool condition, const std::string& message);

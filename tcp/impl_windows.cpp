@@ -3,6 +3,7 @@
 
 #include <iostream>
 
+using namespace Win32;
 
 int WinsockInitializer::refCount = 0;
 bool WinsockInitializer::initialized = false;

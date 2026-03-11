@@ -2,12 +2,10 @@
 #define FIFO_H
 
 #include <string>
+#include <memory>
 
-#ifdef _WIN32
-#include <windows.h>
-#else
-#error "Only windows supported yet"
-#endif
+class I_FifoServer_impl;
+class I_FifoClient_impl;
 
 class FifoServer {
 public:
@@ -18,13 +16,7 @@ public:
 
     void write(const std::string& data);
 private:
-    std::string path;
-
-#ifdef _WIN32
-    HANDLE hPipe;
-#else
-#error "Only windows supported yet"
-#endif
+    std::unique_ptr< I_FifoServer_impl > pimpl;
 };
 
 class FifoClient {
@@ -34,13 +26,7 @@ public:
 
     std::string read(size_t bufferSize = 1024);
 private:
-    std::string path;
-
-#ifdef _WIN32
-    HANDLE hPipe;
-#else
-#error "Only windows supported yet"
-#endif
+    std::unique_ptr< I_FifoClient_impl > pimpl;
 };
 
 #endif // FIFO_H
