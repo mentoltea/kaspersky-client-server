@@ -12,6 +12,8 @@ using json = nlohmann::json;
 
 #define PROTOCOL_VERSION 1
 
+using TCP::TCPClient, TCP::Initializer;
+
 int main(int argc, char** argv) {
     if (argc < 3) {
         std::cerr << "Too few arguments" << std::endl;
@@ -22,6 +24,8 @@ int main(int argc, char** argv) {
 
     std::string filepath = argv[1];
     std::string portstring = argv[2];
+
+    Initializer::initialize();
 
     int port;
     auto [ptr, ec] = std::from_chars(portstring.data(), portstring.data() + portstring.size(), port);
@@ -53,7 +57,10 @@ int main(int argc, char** argv) {
     conn.send(request);
 
     std::string replyStr = conn.receive();
-    // std::cout << replyStr << std::endl;
+    // while (true) {
+    //     std::cout << replyStr << std::endl;
+    //     replyStr = conn.receive();
+    // }
     json reply = json::parse(replyStr);
 
     std::string reply_status = reply["status"].get<std::string>();

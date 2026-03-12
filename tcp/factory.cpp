@@ -1,5 +1,5 @@
 #include "factory.h"
-
+using namespace TCP;
 
 #ifdef _WIN32
     #include "impl_windows.h"

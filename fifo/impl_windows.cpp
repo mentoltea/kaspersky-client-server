@@ -36,6 +36,27 @@ WinFifoServerImpl::~WinFifoServerImpl() {
     }
 }
 
+WinFifoServerImpl::WinFifoServerImpl(WinFifoServerImpl&& other) noexcept
+    : pipePath(std::move(other.pipePath))
+    , hPipe(other.hPipe) {
+    other.hPipe = INVALID_HANDLE_VALUE;
+}
+
+WinFifoServerImpl& WinFifoServerImpl::operator=(WinFifoServerImpl&& other) noexcept {
+    if (this != &other) {
+        if (hPipe != INVALID_HANDLE_VALUE) {
+            DisconnectNamedPipe(hPipe);
+            CloseHandle(hPipe);
+        }
+        
+        pipePath = std::move(other.pipePath);
+        hPipe = other.hPipe;
+        
+        other.hPipe = INVALID_HANDLE_VALUE;
+    }
+    return *this;
+}
+
 void WinFifoServerImpl::waitConnection() {
     if (hPipe == INVALID_HANDLE_VALUE) {
         throw std::runtime_error("Pipe not created");
@@ -138,6 +159,27 @@ WinFifoClientImpl::~WinFifoClientImpl() {
         FlushFileBuffers(hPipe);
         CloseHandle(hPipe);
     }
+}
+
+WinFifoClientImpl::WinFifoClientImpl(WinFifoClientImpl&& other) noexcept
+    : pipePath(std::move(other.pipePath))
+    , hPipe(other.hPipe) {
+    other.hPipe = INVALID_HANDLE_VALUE;
+}
+
+WinFifoClientImpl& WinFifoClientImpl::operator=(WinFifoClientImpl&& other) noexcept {
+    if (this != &other) {
+        if (hPipe != INVALID_HANDLE_VALUE) {
+            FlushFileBuffers(hPipe);
+            CloseHandle(hPipe);
+        }
+        
+        pipePath = std::move(other.pipePath);
+        hPipe = other.hPipe;
+        
+        other.hPipe = INVALID_HANDLE_VALUE;
+    }
+    return *this;
 }
 
 std::string WinFifoClientImpl::read(size_t bufferSize) {

@@ -6,35 +6,40 @@
 #include <vector>
 #include <sstream>
 #include <cstring>
+#include <iostream>
 
-namespace {
+using namespace TCP;
 
-    struct WinTokenData {
-        WSAPROTOCOL_INFO protocolInfo;
-        uint64_t targetPid;
-        
-        uint32_t magic = 0xDEADBEEF;
-        uint32_t version = 1;
-    };
+
+struct WinTokenData {
+    WSAPROTOCOL_INFO protocolInfo;
+    uint64_t targetPid;
     
-    SOCKET getNativeSocket(const I_TCPSocket_impl& socket) {
-        const WinTCPSocketImpl* winSocket = dynamic_cast<const WinTCPSocketImpl*>(&socket);
-        if (!winSocket) {
-            throw std::runtime_error("Socket is not a Windows socket");
-        }
-        
-        return static_cast<SOCKET>(winSocket->native_handle());
+    uint32_t magic = 0xDEADBEEF;
+    uint32_t version = 1;
+};
+
+SOCKET getNativeSocket(const I_TCPSocket_impl& socket) {
+    const WinTCPSocketImpl* winSocket = dynamic_cast<const WinTCPSocketImpl*>(&socket);
+    if (!winSocket) {
+        throw std::runtime_error("Socket is not a Windows socket");
     }
+    
+    return static_cast<SOCKET>(winSocket->native_handle());
 }
+
 
 SocketTransferToken SocketTransferFactory::createToken(
     const I_TCPSocket_impl& socket, uint64_t targetPid) {
     
     SOCKET sock = getNativeSocket(socket);
+
     
     WinTokenData tokenData;
     tokenData.targetPid = targetPid;
     
+    // const_cast<WinTCPSocketImpl*>(dynamic_cast<const WinTCPSocketImpl*>(&socket)) ->diagnoseSocketForDuplicate();
+
     if (WSADuplicateSocket(sock, targetPid, &tokenData.protocolInfo) == SOCKET_ERROR) {
         int error = WSAGetLastError();
         std::stringstream ss;

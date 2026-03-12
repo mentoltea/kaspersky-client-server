@@ -12,6 +12,12 @@ public:
     WinFifoServerImpl(const std::string& path);
     ~WinFifoServerImpl() override;
 
+    WinFifoServerImpl(const WinFifoServerImpl&) = delete;
+    WinFifoServerImpl& operator=(const WinFifoServerImpl&) = delete;
+
+    WinFifoServerImpl(WinFifoServerImpl&& other) noexcept;
+    WinFifoServerImpl& operator=(WinFifoServerImpl&& other) noexcept;
+
     void waitConnection() override;
     void write(const std::string& data) override;
 
@@ -19,7 +25,6 @@ private:
     std::string pipePath;
     HANDLE hPipe;
     
-    void throwIfError(bool condition, const std::string& message);
     void throwLastError(const std::string& operation);
 };
 
@@ -29,13 +34,18 @@ public:
     WinFifoClientImpl(const std::string& path);
     ~WinFifoClientImpl() override;
 
+    WinFifoClientImpl(const WinFifoClientImpl&) = delete;
+    WinFifoClientImpl& operator=(const WinFifoClientImpl&) = delete;
+
+    WinFifoClientImpl(WinFifoClientImpl&& other) noexcept;
+    WinFifoClientImpl& operator=(WinFifoClientImpl&& other) noexcept;
+
     std::string read(size_t bufferSize) override;
 
 private:
     std::string pipePath;
     HANDLE hPipe;
     
-    void throwIfError(bool condition, const std::string& message);
     void throwLastError(const std::string& operation);
 };
 

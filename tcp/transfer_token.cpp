@@ -2,7 +2,7 @@
 #include <vector>
 #include <algorithm>
 #include <cstring>
-
+using namespace TCP;
 struct SocketTransferToken::Impl {
     std::vector<char> data;
     

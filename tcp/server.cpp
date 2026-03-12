@@ -3,6 +3,7 @@
 #include "factory.h"
 #include "impl_windows.h"
 
+using namespace TCP;
 
 TCPServer::TCPServer(const std::string& address, int port) 
     : pimpl(SocketFactory::createServerImpl(address, port)) {}

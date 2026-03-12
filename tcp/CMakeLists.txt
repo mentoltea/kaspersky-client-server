@@ -7,6 +7,7 @@ set(TCP_HEADERS
     "socket.h"
     "transfer_token.h"
     "transfer_factory.h"
+    "initializer.h"
 )
 
 set(TCP_SOURCES
@@ -15,6 +16,7 @@ set(TCP_SOURCES
     "factory.cpp"
     "socket.cpp"
     "transfer_token.cpp"
+    "initializer.cpp"
 )
 
 if (WIN32) 

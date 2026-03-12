@@ -12,6 +12,16 @@ FifoServer::FifoServer(const std::string& path)
 
 FifoServer::~FifoServer() = default;
 
+FifoServer::FifoServer(FifoServer&& other) noexcept
+    : pimpl(std::move(other.pimpl)) {}
+
+FifoServer& FifoServer::operator=(FifoServer&& other) noexcept {
+    if (this != &other) {
+        pimpl = std::move(other.pimpl);
+    }
+    return *this;
+}
+
 void FifoServer::waitConnection() {
     if (!pimpl) throw std::runtime_error("Server not initialized");
     pimpl->waitConnection();
@@ -34,6 +44,16 @@ FifoClient::FifoClient(const std::string& path)
 }
 
 FifoClient::~FifoClient() = default;
+
+FifoClient::FifoClient(FifoClient&& other) noexcept
+    : pimpl(std::move(other.pimpl)) {}
+
+FifoClient& FifoClient::operator=(FifoClient&& other) noexcept {
+    if (this != &other) {
+        pimpl = std::move(other.pimpl);
+    }
+    return *this;
+}
 
 std::string FifoClient::read(size_t bufferSize) {
     if (!pimpl) throw std::runtime_error("Client not initialized");

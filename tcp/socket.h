@@ -5,7 +5,7 @@
 #include <memory>
 
 #include "transfer_token.h"
-
+namespace TCP {
 class I_TCPSocket_impl;
 
 // для принятых клиентских соединений
@@ -34,5 +34,5 @@ private:
     
     std::unique_ptr<I_TCPSocket_impl> pimpl;
 };
-
+}
 #endif // TCP_SOCKET_H

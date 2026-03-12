@@ -4,12 +4,12 @@
 #include "interface.h"
 #include <memory>
 #include <string>
-
+namespace TCP {
 class SocketFactory {
 public:
     static std::unique_ptr<I_TCPServer_impl> createServerImpl(const std::string& address, int port);
     
     static std::unique_ptr<I_TCPClient_impl> createClientImpl();
 };
-
+}
 #endif // TCP_FACTORY_H

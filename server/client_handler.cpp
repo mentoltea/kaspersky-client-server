@@ -1,5 +1,7 @@
 #include <iostream>
 #include <string>
+#include <thread>
+#include <memory>
 
 #include "tcp/tcp.h"
 #include "fifo/fifo.h"
@@ -9,17 +11,40 @@ using json = nlohmann::json;
 
 #include "common.h"
 
-int main() {
-    FifoClient fifo(FIFO_NAME);
+using TCP::SocketTransferToken, TCP::TCPSocket, TCP::Initializer;
 
-    std::string header = fifo.read(sizeof(size_t));
+int main(int argc, char** argv) {
+    {
+        Initializer::initialize();
+
+        FifoServer init(FIFO_NAME INIT_POSTFIX);
+        init.waitConnection();
+        init.write("ack");
+    }
+    
+    std::unique_ptr< FifoClient > fifo = nullptr;
+    {
+        bool connected = false;
+        while (!connected) {
+            try {
+                fifo.reset(new FifoClient(std::move(FifoClient(FIFO_NAME))));
+                connected = true;
+            } catch (std::runtime_error &e) {}
+        }
+    }
+    if (!fifo) {
+        throw std::runtime_error("Could not connect pipe");
+    }
+
+
+    std::string header = fifo->read(sizeof(size_t));
     if (header.size() != sizeof(size_t)) {
         throw std::runtime_error("FIFO: Expected header size" + std::to_string(sizeof(size_t)) + ", got " + std::to_string(header.size()));
     }
     size_t data_size;
     std::memcpy(&data_size, header.data(), sizeof(size_t));
 
-    std::string data = fifo.read(data_size);
+    std::string data = fifo->read(data_size);
     if (data.size() != data_size) {
         throw std::runtime_error("FIFO: Expected data size" + std::to_string(data_size) + ", got " + std::to_string(data.size()));
     }

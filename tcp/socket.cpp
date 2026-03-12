@@ -2,6 +2,7 @@
 #include "interface.h"
 #include "transfer_factory.h"
 #include <stdexcept>
+using namespace TCP;
 
 TCPSocket::TCPSocket(std::unique_ptr<I_TCPSocket_impl> impl)
     : pimpl(std::move(impl)) {

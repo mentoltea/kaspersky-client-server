@@ -4,7 +4,7 @@
 #include <memory>
 #include <cstddef>
 
-
+namespace TCP {
 class SocketTransferToken {
 public:
     SocketTransferToken();
@@ -29,5 +29,5 @@ private:
     
     explicit SocketTransferToken(std::unique_ptr<Impl>&& impl);
 };
-
+}
 #endif // SOCKET_TRANSFER_TOKEN_H

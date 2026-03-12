@@ -6,18 +6,7 @@
 #include <ws2tcpip.h>
 #include <string>
 #include <memory>
-
-class WinsockInitializer {
-public:
-    WinsockInitializer();
-    ~WinsockInitializer();
-    static void ensureInitialized();
-
-private:
-    static int refCount;
-    static bool initialized;
-};
-
+namespace TCP {
 class WinTCPSocketImpl : public I_TCPSocket_impl {
 public:
     WinTCPSocketImpl(SOCKET sock, bool takeOwnership = true);
@@ -31,6 +20,7 @@ public:
     
     intptr_t native_handle() const { return (intptr_t)(sock); }
 
+    void diagnoseSocketForDuplicate();
 private:
     SOCKET sock;
     bool isConnected;
@@ -81,5 +71,5 @@ private:
     
     void throwLastError(const std::string& operation);
 };
-
+}
 #endif // TCP_IMPL_WINDOWS_H

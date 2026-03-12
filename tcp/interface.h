@@ -3,7 +3,7 @@
 
 #include <string>
 #include <memory>
-
+namespace TCP {
 class TCPSocket;
 
 class I_TCPSocket_impl {
@@ -27,5 +27,5 @@ class I_TCPClient_impl : public I_TCPSocket_impl {
 public:
     virtual void connect(const std::string& address, int port) = 0;
 };
-
+}
 #endif // TCP_INTERFACE_H

@@ -2,6 +2,8 @@
 #include "factory.h"
 #include <stdexcept>
 
+using namespace TCP;
+
 TCPClient::TCPClient() 
     : pimpl(SocketFactory::createClientImpl()) {
     if (!pimpl) {

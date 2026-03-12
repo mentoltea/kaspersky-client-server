@@ -3,7 +3,7 @@
 
 #include <string>
 #include <memory>
-
+namespace TCP {
 class I_TCPServer_impl;
 class TCPSocket;
 
@@ -29,5 +29,5 @@ public:
 private:
     std::unique_ptr<I_TCPServer_impl> pimpl;
 };
-
+}
 #endif // TCP_SERVER_H

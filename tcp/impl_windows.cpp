@@ -1,47 +1,74 @@
 #include "impl_windows.h"
+#include "initializer.h"
+
+using namespace TCP;
+
 #include <sstream>
 #include <vector>
+#include <iostream>
 
-// ==================== WinsockInitializer ====================
-int WinsockInitializer::refCount = 0;
-bool WinsockInitializer::initialized = false;
 
-WinsockInitializer::WinsockInitializer() {
-    ensureInitialized();
-}
-
-WinsockInitializer::~WinsockInitializer() {
-    refCount--;
-    if (refCount == 0 && initialized) {
-        WSACleanup();
-        initialized = false;
+void WinTCPSocketImpl::diagnoseSocketForDuplicate() {
+    std::cout << "=== Socket Diagnostic ===" << std::endl;
+    
+    std::cout << "Socket handle value: " << sock << std::endl;
+    if (sock == INVALID_SOCKET || sock == 0) {
+        std::cout << "INVALID SOCKET!" << std::endl;
+        return;
+    } else {
+        std::cout << "Socket handle looks valid" << std::endl;
     }
-}
-
-void WinsockInitializer::ensureInitialized() {
-    if (!initialized) {
-        WSADATA wsaData;
-        int result = WSAStartup(MAKEWORD(2, 2), &wsaData);
-        if (result != 0) {
-            throw std::runtime_error("WSAStartup failed: " + std::to_string(result));
+    
+    int type;
+    int len = sizeof(type);
+    int result = getsockopt(sock, SOL_SOCKET, SO_TYPE, (char*)&type, &len);
+    if (result == 0) {
+        std::cout << "getsockopt SO_TYPE succeeded. Type: " << type << " (1=SOCK_STREAM)" << std::endl;
+    } else {
+        int err = WSAGetLastError();
+        std::cout << "getsockopt SO_TYPE failed. Error: " << err << std::endl;
+        if (err == WSAENOTSOCK) {
+            std::cout << "This is NOT a socket! (WSAENOTSOCK)" << std::endl;
         }
-        initialized = true;
     }
-    refCount++;
+    
+    int error_code;
+    socklen_t error_len = sizeof(error_code);
+    result = getsockopt(sock, SOL_SOCKET, SO_ERROR, (char*)&error_code, &error_len);
+    if (result == 0) {
+        std::cout << "getsockopt SO_ERROR succeeded. Error code: " << error_code << std::endl;
+    } else {
+        std::cout << "getsockopt SO_ERROR failed" << std::endl;
+    }
+    
+    sockaddr_in localAddr;
+    int addrLen = sizeof(localAddr);
+    result = getsockname(sock, (sockaddr*)&localAddr, &addrLen);
+    if (result == 0) {
+        std::cout << "getsockname succeeded. Port: " << ntohs(localAddr.sin_port) << std::endl;
+    } else {
+        int err = WSAGetLastError();
+        std::cout << "getsockname failed. Error: " << err << std::endl;
+        if (err == WSAEINVAL) {
+            std::cout << "Socket is not bound (not connected/listening?)" << std::endl;
+        }
+    }
+    
+    std::cout << "=== End Diagnostic ===" << std::endl;
 }
 
-
+// ----------------------------
 
 WinTCPSocketImpl::WinTCPSocketImpl(SOCKET sock, bool takeOwnership) 
     : sock(sock), isConnected(true), owner(takeOwnership) {
-    WinsockInitializer::ensureInitialized();
+    // Initializer::initialize();
 }
 
 WinTCPSocketImpl::WinTCPSocketImpl(const std::string& /*address*/, int /*port*/) 
     : sock(INVALID_SOCKET), isConnected(false), owner(true) {
-    WinsockInitializer::ensureInitialized();
+    // Initializer::initialize();
     
-    sock = socket(AF_INET, SOCK_STREAM, 0);
+    sock = WSASocketA(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
     if (sock == INVALID_SOCKET) {
         throwLastError("socket");
     }
@@ -104,9 +131,9 @@ void WinTCPSocketImpl::throwLastError(const std::string& operation) {
 WinTCPServerImpl::WinTCPServerImpl(const std::string& address, int port) 
     : serverSocket(INVALID_SOCKET), isListening(false), isBound(false) {
     
-    WinsockInitializer::ensureInitialized();
+    // Initializer::initialize();
     
-    serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+    serverSocket = WSASocketA(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
     if (serverSocket == INVALID_SOCKET) {
         throwLastError("socket");
     }
@@ -204,9 +231,9 @@ void WinTCPServerImpl::throwLastError(const std::string& operation) {
 WinTCPClientImpl::WinTCPClientImpl() 
     : clientSocket(INVALID_SOCKET), isConnected(false) {
     
-    WinsockInitializer::ensureInitialized();
+    // Initializer::initialize();
     
-    clientSocket = socket(AF_INET, SOCK_STREAM, 0);
+    clientSocket = WSASocketA(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
     if (clientSocket == INVALID_SOCKET) {
         throwLastError("socket");
     }

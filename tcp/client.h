@@ -4,6 +4,8 @@
 #include <string>
 #include <memory>
 
+namespace TCP {
+
 class I_TCPClient_impl;
 
 class TCPClient {
@@ -31,5 +33,7 @@ public:
 private:
     std::unique_ptr<I_TCPClient_impl> pimpl;
 };
+
+}
 
 #endif // TCP_CLIENT_H
