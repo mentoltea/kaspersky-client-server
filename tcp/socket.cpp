@@ -42,7 +42,7 @@ bool TCPSocket::isOpen() const {
     return pimpl && pimpl->isOpen();
 }
 
-SocketTransferToken TCPSocket::prepareForTransfer(pid_t targetPid) {
+SocketTransferToken TCPSocket::prepareForTransfer(uint64_t targetPid) {
     if (!pimpl) throw std::runtime_error("Socket not initialized");
     
     return SocketTransferFactory::createToken(*pimpl, targetPid);

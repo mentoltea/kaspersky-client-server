@@ -1,0 +1,100 @@
+#include "manager.h"
+
+#include <windows.h>
+#include <processthreadsapi.h>
+#include <sstream>
+
+uint64_t ProcessManager::create(const std::string &path, const std::vector<std::string> &args) {
+    std::stringstream buffer;
+
+    for (auto &arg: args) {
+        buffer << arg << " ";
+    }
+
+    STARTUPINFOA siStartInfo;
+    ZeroMemory(&siStartInfo, sizeof(siStartInfo));
+    siStartInfo.cb = sizeof(STARTUPINFO);
+    siStartInfo.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+    siStartInfo.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+    siStartInfo.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+    siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
+
+    PROCESS_INFORMATION piProcInfo;
+    ZeroMemory(&piProcInfo, sizeof(PROCESS_INFORMATION));
+    
+    CreateProcessA(
+        path.c_str(), 
+        buffer.str().data(), 
+        NULL, 
+        NULL, 
+        false, 
+        0, 
+        NULL, 
+        NULL, 
+        &siStartInfo, 
+        &piProcInfo
+    );
+
+    HANDLE hProcess = piProcInfo.hProcess;
+    return (uint64_t) hProcess;
+}
+
+void ProcessManager::wait(uint64_t pid) {
+    HANDLE hProcess = (HANDLE) pid;
+    DWORD result;
+    result = WaitForSingleObject(hProcess, INFINITE);
+    switch (result) {
+    case WAIT_OBJECT_0:
+        return ;
+    case WAIT_TIMEOUT:
+    case WAIT_ABANDONED:
+    case WAIT_FAILED:
+    default:
+        DWORD error = GetLastError();
+        std::stringstream ss;
+        ss << "Process wait failed. Error code: " << error;
+        throw std::runtime_error(ss.str());
+    }
+}
+
+ProcessManager::WaitResult ProcessManager::wait(uint64_t pid, int durationMs) {
+    HANDLE hProcess = (HANDLE) pid;
+    DWORD result;
+    result = WaitForSingleObject(hProcess, durationMs);
+    switch (result) {
+    case WAIT_OBJECT_0:
+        return WaitResult::FINISHED;
+    case WAIT_TIMEOUT:
+        return WaitResult::TIMEOUT;
+
+    case WAIT_ABANDONED:
+    case WAIT_FAILED:
+    default:
+        DWORD error = GetLastError();
+        std::stringstream ss;
+        ss << "Process wait failed. Error code: " << error;
+        throw std::runtime_error(ss.str());
+    }
+}
+
+int ProcessManager::returnCode(uint64_t pid) {
+    HANDLE hProcess = (HANDLE) pid;
+    DWORD result;
+    if (GetExitCodeProcess(hProcess, &result) == false) {
+        DWORD error = GetLastError();
+        std::stringstream ss;
+        ss << "Process return code retrival failed. Error code: " << error;
+        throw std::runtime_error(ss.str());
+    }
+    return result;
+}
+
+void ProcessManager::kill(uint64_t pid) {
+    HANDLE hProcess = (HANDLE) pid;
+    if (TerminateProcess(hProcess, 1) == false) {
+        DWORD error = GetLastError();
+        std::stringstream ss;
+        ss << "Process termination failed. Error code: " << error;
+        throw std::runtime_error(ss.str());
+    }
+}

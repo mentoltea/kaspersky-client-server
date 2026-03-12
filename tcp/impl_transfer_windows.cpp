@@ -11,7 +11,7 @@ namespace {
 
     struct WinTokenData {
         WSAPROTOCOL_INFO protocolInfo;
-        unsigned long targetPid;
+        uint64_t targetPid;
         
         uint32_t magic = 0xDEADBEEF;
         uint32_t version = 1;
@@ -28,7 +28,7 @@ namespace {
 }
 
 SocketTransferToken SocketTransferFactory::createToken(
-    const I_TCPSocket_impl& socket, unsigned long targetPid) {
+    const I_TCPSocket_impl& socket, uint64_t targetPid) {
     
     SOCKET sock = getNativeSocket(socket);
     

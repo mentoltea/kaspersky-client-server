@@ -8,7 +8,7 @@
 
 class SocketTransferFactory {
 public:
-    static SocketTransferToken createToken(const I_TCPSocket_impl& socket, unsigned long targetPid);
+    static SocketTransferToken createToken(const I_TCPSocket_impl& socket, uint64_t targetPid);
     
     static std::unique_ptr<I_TCPSocket_impl> createImplFromToken(const SocketTransferToken& token);
 };

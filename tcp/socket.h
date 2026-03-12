@@ -25,7 +25,7 @@ public:
     void close();
     bool isOpen() const;
 
-    SocketTransferToken prepareForTransfer(pid_t targetPid);    
+    SocketTransferToken prepareForTransfer(uint64_t targetPid);    
     static std::unique_ptr<TCPSocket> fromTransferToken(const SocketTransferToken& token);
 
 private:
