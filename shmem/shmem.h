@@ -7,6 +7,7 @@ class I_SharedMemory_impl;
 #include <memory>
 
 class SharedMemory {
+public:
     SharedMemory(const std::string& name, size_t size); // new
     SharedMemory(const std::string& name); // existing
     

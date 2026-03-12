@@ -16,6 +16,7 @@ add_subdirectory(tcp)
 add_subdirectory(fifo)
 add_subdirectory(shmem)
 add_subdirectory(process)
+add_subdirectory(mutex)
 
 add_subdirectory(client)
 add_subdirectory(server)

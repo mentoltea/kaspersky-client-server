@@ -1,18 +1,6 @@
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <filesystem>
+#include "server.h"
 
-#include <charconv>
 
-#include "tcp/tcp.h"
-#include "fifo/fifo.h"
-#include "process/manager.h"
-
-#include "thirdparty/nlohmann/json.hpp"
-using json = nlohmann::json;
-
-#include "common.h"
 
 using TCP::Initializer, TCP::TCPServer;
 
@@ -32,11 +20,47 @@ int main(int argc, char** argv) {
             break;
         }
     } 
-    std::cout << "programm_path: " << programm_path << std::endl;
-    std::cout << "programm_directory: " << programm_directory << std::endl;
+    // std::cout << "programm_path: " << programm_path << std::endl;
+    // std::cout << "programm_directory: " << programm_directory << std::endl;
     
     std::string filepath = argv[1];
     std::string portstring = argv[2];
+
+    json conf;
+    {
+        std::ifstream confFile(filepath);
+        conf = json::parse(confFile);
+    }
+    
+    auto threats = conf["threats"].get< std::vector<json> >();
+
+    size_t signatureTotalSize = 0; 
+    std::vector< std::string > dataSignatures;
+    for (auto &threat: threats) {
+        threat["name"].get<std::string>();
+        threat["description"].get<std::string>();
+        threat["occured"].get<size_t>();
+        std::vector< int > signature = threat["signature"].get< std::vector< int > >();
+        
+        std::string data(signature.size(), (char)0);
+        for (size_t i=0; i<signature.size(); i++) {
+            int sign = signature[i];
+            if (sign < 0 || sign > 255) {
+                throw std::runtime_error("Signature " + std::to_string(sign) + " is outside char limits");
+            }
+            data[i] = (char)((unsigned char)(sign));
+        }
+        dataSignatures.push_back(data);
+
+        signatureTotalSize += SharedData::computeSharedSize(data);
+    }
+
+    size_t shmem_size = sizeof(ShmemNavigator) + threats.size() * sizeof(ThreatCommon) + signatureTotalSize;
+
+    SharedMemory shmem(SHMEM_NAME, shmem_size);
+
+    ShmemNavigator* navigator = ShmemNavigator::initialize(shmem.get(), threats, dataSignatures);
+
 
     Initializer::initialize();
 
@@ -54,6 +78,11 @@ int main(int argc, char** argv) {
     TCPServer conn("0.0.0.0", port);
     conn.listen(10);
     std::cout << "Listening on port " << port << std::endl;
+    
+
+    std::jthread statListener(listenStatistic, navigator);
+    std::jthread confUpdater(updateConf, navigator, filepath, std::ref(conf), port+1);
+    
     
     size_t count = 1;
     while (true) {

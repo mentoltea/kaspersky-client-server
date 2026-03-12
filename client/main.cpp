@@ -98,6 +98,7 @@ int main(int argc, char** argv) {
     json result = json::parse(resultStr);
 
     bool dangerous = result["dangerous"].get<bool>();
+    std::cout << "Verdict: ";
     if (dangerous) {
         std::cout << "File is dangerous" << std::endl;
     } else {
