@@ -17,7 +17,16 @@ void listenStatistic(ShmemNavigator *navigator) {
                 
                 
                     statistic << "\"name\" : ";
-                    statistic << "\"" << threat.name << "\"," << std::endl;
+                    statistic << "\""; 
+                    for (
+                        const char* ptr = threat.name; 
+                        ((size_t)(ptr - threat.name) < sizeof(threat.name)) && *ptr != '\0';
+                        ptr++
+                    ) {
+                        if (*ptr == '"') statistic << "\\\"";
+                        else statistic << *ptr;
+                    }
+                    statistic << "\"," << std::endl;
                     
                     statistic << "\"occured\" : ";
                     

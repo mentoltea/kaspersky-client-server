@@ -20,7 +20,7 @@ add_subdirectory(mutex)
 
 add_subdirectory(client)
 add_subdirectory(server)
-# add_subdirectory(statistic)
+add_subdirectory(statistic)
 
 # add_custom_target(all_targets ALL
 #     DEPENDS client server statistic

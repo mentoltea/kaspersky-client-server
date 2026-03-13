@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 project(Server)
 
-
 set(SERVER_HEADERS "common.h" "statistic.h" "server.h" "shared_data.hpp")
 set(SERVER_SOURCES "main.cpp" "common.cpp" "confupdater.cpp" "statlistener.cpp")
 
