@@ -1,10 +1,34 @@
 #include "server.h"
 
+#include <csignal>
 
+using TCP::Initializer, TCP::TCPServer, TCP::TCPClient;
 
-using TCP::Initializer, TCP::TCPServer;
+static int port = 0;
+static int updaterPort = 0;
+
+void signalIntHandler(int /*signal*/) {
+    if (updaterPort == 0) {
+        std::cout << "Update server has not been set up, no saving" << std::endl;
+        exit(0);
+    }
+    std::string updateStr = "{ \"indexes\" : [] }";
+    size_t updateSize = updateStr.size();
+    std::string updateHeader((char*)&updateSize, sizeof(size_t));
+
+    TCPClient conn;
+    conn.connect("127.0.0.1", updaterPort);
+    conn.send(updateHeader);
+    conn.send(updateStr);
+    std::cout << "Saving statistics..." << std::endl;
+    conn.receive(4);
+    std::cout << "Successfully saved, exiting..." << std::endl;
+    exit(0);
+}
 
 int main(int argc, char** argv) {
+    std::signal(SIGINT, signalIntHandler);
+    
     if (argc < 3) {
         std::cerr << "Too few arguments" << std::endl;
         std::cerr << "Usage:" << std::endl;
@@ -64,7 +88,6 @@ int main(int argc, char** argv) {
 
     Initializer::initialize();
 
-    int port;
     auto [ptr, ec] = std::from_chars(portstring.data(), portstring.data() + portstring.size(), port);
 
     if (ec == std::errc::invalid_argument) {
@@ -82,7 +105,7 @@ int main(int argc, char** argv) {
     
 
     std::jthread statListener(listenStatistic, navigator);
-    int updaterPort = port+1;
+    updaterPort = port+1;
     std::jthread confUpdater(updateConf, navigator, filepath, std::ref(conf), updaterPort);
     
     

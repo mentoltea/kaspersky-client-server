@@ -12,7 +12,11 @@ void updateConf(ShmemNavigator *navigator, std::string filepath, json & conf, in
         try {
             auto conn = localserver.accept();
 
-            std::string requestStr = conn->receive();
+            std::string requestHeader = conn->receive(sizeof(size_t));
+            size_t requestSize;
+            std::memcpy((char*)&requestSize, requestHeader.data(), sizeof(size_t));
+            
+            std::string requestStr = conn->receive(requestSize);
             json request = json::parse(requestStr);
             
             std::vector<size_t> indexes = request["indexes"].get< std::vector<size_t> >();
@@ -26,7 +30,7 @@ void updateConf(ShmemNavigator *navigator, std::string filepath, json & conf, in
                 ThreatCommon& threat = common[index];
                 
                 threat.mutex.lock();
-                threats[index]["ocurred"] = threat.occured;
+                threats[index]["occured"] = threat.occured;
                 threat.mutex.unlock();
             }
 
@@ -34,8 +38,12 @@ void updateConf(ShmemNavigator *navigator, std::string filepath, json & conf, in
             
             {
                 std::ofstream confFile(filepath);
-                confFile << conf;
+                confFile << conf.dump(4);
             }
+
+            try {
+                conn->send("Saved");
+            } catch (std::runtime_error &e) {}
         } catch (std::runtime_error &e) {
             std::cerr << e.what() << std::endl;
         }

@@ -10,7 +10,7 @@
 
 #include "common.h"
 
-using TCP::SocketTransferToken, TCP::TCPSocket, TCP::Initializer;
+using TCP::SocketTransferToken, TCP::TCPSocket, TCP::TCPClient, TCP::Initializer;
 
 void Init() {
     Initializer::initialize();
@@ -115,6 +115,62 @@ std::set<size_t> analyzeStream(
     return threatIndexes;
 }
 
+void sendResults(
+    std::unique_ptr<TCPSocket> &clientConn,
+    std::set< size_t > threatIndexes,
+    ThreatCommon* commons
+) {
+    std::stringstream result;
+    if (threatIndexes.empty()) {
+        result << R"({
+            "dangerous" : false
+        })";
+    } else {
+        result << R"({
+            "dangerous" : true,
+            "threats" : [ )";
+
+        for (auto it = threatIndexes.begin(); it!=threatIndexes.end(); it++) {
+            ThreatCommon &threat = commons[*it];
+            result << "{";
+            result << "\"name\" : \"";
+
+            for (
+                const char* ptr = threat.name; 
+                ((size_t)(ptr - threat.name) < sizeof(threat.name)) && *ptr != '\0';
+                ptr++
+            ) {
+                if (*ptr == '"') result << "\\\"";
+                else result << *ptr;
+            }
+            result << "\" ," << std::endl;
+            
+            result << "\"description\" : \""; 
+            for (
+                const char* ptr = threat.description; 
+                ((size_t)(ptr - threat.description) < sizeof(threat.description)) && *ptr != '\0';
+                ptr++
+            ) {
+                if (*ptr == '"') result << "\\\"";
+                else result << *ptr;
+            }
+            result << "\"" << std::endl;
+            result << "}";
+            if (std::next(it) != threatIndexes.end()) result << ",";
+            result << std::endl;
+        }
+        result << "]}";
+    }
+    
+    std::string resultStr = result.str();
+    
+    uint64_t resultSize = resultStr.size();
+    std::string resultHeader((char*)&resultSize, sizeof(uint64_t));
+    
+    clientConn->send(resultHeader);
+    clientConn->send(resultStr);
+}
+
 int main(int argc, char** argv) {
     (void)(argc);
     Init();
@@ -148,7 +204,7 @@ int main(int argc, char** argv) {
     // std::cout << "Socketed" << std::endl;
 
     std::string requestStr = clientConn->receive();
-    std::cout << requestStr << std::endl;
+    // std::cout << requestStr << std::endl;
     json request = json::parse(requestStr);
     
     json protocol = request["protocol"];
@@ -207,58 +263,32 @@ int main(int argc, char** argv) {
 
     auto threatIndexes = analyzeStream(clientConn, filesize, indexToPtr, maxSignSize);
     
-
-    std::stringstream result;
-    if (threatIndexes.empty()) {
-        result << R"({
-            "dangerous" : false
-        })";
-    } else {
-        result << R"({
-            "dangerous" : true,
-            "threats" : [ )";
-
-        for (auto it = threatIndexes.begin(); it!=threatIndexes.end(); it++) {
-            ThreatCommon &threat = commons[*it];
-            result << "{";
-            result << "\"name\" : \"";
-
-            for (
-                const char* ptr = threat.name; 
-                ((size_t)(ptr - threat.name) < sizeof(threat.name)) && *ptr != '\0';
-                ptr++
-            ) {
-                if (*ptr == '"') result << "\\\"";
-                else result << *ptr;
-            }
-            result << "\" ," << std::endl;
-            
-            result << "\"description\" : \""; 
-            for (
-                const char* ptr = threat.description; 
-                ((size_t)(ptr - threat.description) < sizeof(threat.description)) && *ptr != '\0';
-                ptr++
-            ) {
-                if (*ptr == '"') result << "\\\"";
-                else result << *ptr;
-            }
-            result << "\"" << std::endl;
-            result << "}";
-            if (std::next(it) != threatIndexes.end()) result << ",";
-            result << std::endl;
-        }
-        result << "]}";
-    }
-    
-    std::string resultStr = result.str();
-    
-    uint64_t resultSize = resultStr.size();
-    std::string resultHeader((char*)&resultSize, sizeof(uint64_t));
-    
-    clientConn->send(resultHeader);
-    clientConn->send(resultStr);
+    sendResults(clientConn, threatIndexes, commons);    
 
     // update statistics
+
+    std::stringstream updateRequest;
+    updateRequest << "{ \"indexes\" : [";
+    for (auto it=threatIndexes.begin(); it != threatIndexes.end(); it++) {
+        size_t index = *it;
+        
+        ThreatCommon &threat = commons[index];    
+        threat.mutex.lock();
+        threat.occured++;
+        threat.mutex.unlock();
+
+        updateRequest << index;
+        if (std::next(it) != threatIndexes.end()) updateRequest << ", ";
+    }
+    updateRequest << "] }";
+    std::string updateStr = updateRequest.str();
+    size_t updateSize = updateStr.size();
+    std::string updateHeader((char*)&updateSize, sizeof(size_t));
+
+    TCPClient conn;
+    conn.connect("127.0.0.1", updaterPort);
+    conn.send(updateHeader);
+    conn.send(updateStr);
 
     return 0;
 }
