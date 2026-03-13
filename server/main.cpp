@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
             if (sign < 0 || sign > 255) {
                 throw std::runtime_error("Signature " + std::to_string(sign) + " is outside char limits");
             }
-            data[i] = (char)((unsigned char)(sign));
+            data[i] = static_cast<char>(static_cast<unsigned char>(sign));
         }
         dataSignatures.push_back(data);
 
@@ -77,16 +77,19 @@ int main(int argc, char** argv) {
 
     TCPServer conn("0.0.0.0", port);
     conn.listen(10);
+    std::cout << "Protocol version " << PROTOCOL_VERSION << std::endl;
     std::cout << "Listening on port " << port << std::endl;
     
 
     std::jthread statListener(listenStatistic, navigator);
-    std::jthread confUpdater(updateConf, navigator, filepath, std::ref(conf), port+1);
+    int updaterPort = port+1;
+    std::jthread confUpdater(updateConf, navigator, filepath, std::ref(conf), updaterPort);
     
     
     size_t count = 1;
     while (true) {
         try {
+            // std::cout << "Waiting new connection..." << std::endl;
             auto clientConn = conn.accept();
 
             
@@ -97,7 +100,7 @@ int main(int argc, char** argv) {
                 
                 {
                     handler_path, 
-                    FIFO_NAME
+                    std::to_string(updaterPort)
                 }
             );
             std::cout << "Client " << count << std::endl;
@@ -105,32 +108,18 @@ int main(int argc, char** argv) {
 
             auto pid = ProcessManager::pid(process);
 
-            bool initialized = false;
-            size_t fail_count = 0;
+            size_t max_fail_count = 10;
             {
-                while (!initialized) {
-                    try {
-                        FifoClient init(FIFO_NAME INIT_POSTFIX);
-                        init.read(4);
-                        initialized = true;
-                    } catch (std::runtime_error &e) {
-                        fail_count++;
-                        std::this_thread::sleep_for(
-                            std::chrono::milliseconds(10)
-                        );
-                    }
-
-                    if (fail_count >= 10) {
-                        ProcessManager::kill(process);
-                        std::cerr << "Subprocess could not initialize in " << fail_count << " attempts" << std::endl;
-                        break;
-                    }
+                auto init = connectFifo(FIFO_NAME INIT_POSTFIX, max_fail_count);
+                if (!init) {
+                    ProcessManager::kill(process);
+                    std::cerr << "Subprocess could not initialize in " << max_fail_count << " attempts" << std::endl;
+                    continue;
                 }
-
-                // std::cout << "Initialization approved" << std::endl;
+                init->read(4);
             }
-            if (!initialized) continue;
-            std::cout << "Subprocess initialized in " << fail_count << " attempts" << std::endl;
+
+            // std::cout << "Init confirmed" << std::endl;
 
             auto transferToken = clientConn->prepareForTransfer(pid);
 
@@ -142,6 +131,17 @@ int main(int argc, char** argv) {
             fifo.waitConnection();
             fifo.write(header);
             fifo.write(data);
+
+            {
+                auto transfer = connectFifo(FIFO_NAME TRANSFER_POSTFIX, max_fail_count);
+                if (!transfer) {
+                    ProcessManager::kill(process);
+                    std::cerr << "Subprocess could not finish client socket transfer in " << max_fail_count << " attempts" << std::endl;
+                }
+                transfer->read(4);
+            }
+            // std::cout << "Transfer confirmed" << std::endl;
+
         } catch (std::runtime_error &e) {
             std::cerr << e.what() << std::endl;
         }

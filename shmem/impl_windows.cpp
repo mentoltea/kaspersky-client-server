@@ -6,9 +6,14 @@ WinSharedMemoryImpl::WinSharedMemoryImpl(const std::string& name, size_t size)
     , data_(nullptr)
     , fileMapping(nullptr) 
 {
+    SECURITY_ATTRIBUTES sa;
+    sa.nLength = sizeof(sa);
+    sa.lpSecurityDescriptor = NULL;
+    sa.bInheritHandle = TRUE;
+
     fileMapping = CreateFileMappingA(
         INVALID_HANDLE_VALUE,
-        NULL,
+        &sa,
         PAGE_READWRITE,
         static_cast<DWORD>(size >> 32),
         static_cast<DWORD>(size & 0xFFFFFFFF),
@@ -48,39 +53,42 @@ WinSharedMemoryImpl::WinSharedMemoryImpl(const std::string& name)
     , data_(nullptr)
     , fileMapping(nullptr) 
 {
-    fileMapping = OpenFileMappingA(
+    HANDLE fileMapping = OpenFileMappingA(
         FILE_MAP_ALL_ACCESS, 
-        FALSE,
+        TRUE,
         name.c_str()
     );
-    
+
     if (!fileMapping) {
         throwLastError("OpenFileMapping");
     }
-    
-    BY_HANDLE_FILE_INFORMATION fileInfo;
-    if (!GetFileInformationByHandle(fileMapping, &fileInfo)) {
-        CloseHandle(fileMapping);
-        fileMapping = nullptr;
-        throwLastError("GetFileInformationByHandle");
-    }
-    
-    // размер хранится в двух DWORD
-    size_ = (static_cast<size_t>(fileInfo.nFileSizeHigh) << 32) | 
-             static_cast<size_t>(fileInfo.nFileSizeLow);
-    
+
     data_ = MapViewOfFile(
         fileMapping,
         FILE_MAP_ALL_ACCESS,
         0, 0,
-        size_
+        0
     );
-    
+
     if (!data_) {
         CloseHandle(fileMapping);
         fileMapping = nullptr;
         throwLastError("MapViewOfFile");
     }
+
+    MEMORY_BASIC_INFORMATION memInfo;
+    memset(&memInfo, 0, sizeof(memInfo));
+    SIZE_T result = VirtualQuery(data_, &memInfo, sizeof(memInfo));
+
+    if (result == 0) {
+        UnmapViewOfFile(data_);
+        data_ = nullptr;
+        CloseHandle(fileMapping);
+        fileMapping = nullptr;
+        throwLastError("VirtualQuery");
+    }
+
+    size_ = memInfo.RegionSize;
 }
 
 WinSharedMemoryImpl::~WinSharedMemoryImpl() {

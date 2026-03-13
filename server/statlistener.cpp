@@ -39,21 +39,10 @@ void listenStatistic(ShmemNavigator *navigator) {
             fifo.write(header);
             fifo.write(data);
             
-            bool accepted = false;
-            size_t fail_count = 0;
-            while (!accepted) {
-                try {
-                    FifoClient acc(STAT_FIFO_NAME ACC_POSTFIX);
-                    accepted = true;
-                } catch (std::runtime_error &e) {
-                    fail_count++;
-                    std::this_thread::sleep_for(
-                        std::chrono::milliseconds(10)
-                    );
-                }
-                if (fail_count >= 10) {
-                    break;
-                }
+            size_t max_fail_count = 10;
+            {
+                auto acc = connectFifo(STAT_FIFO_NAME ACC_POSTFIX, max_fail_count);
+                if (!acc) continue;
             }
         } catch (std::runtime_error &e) {
             std::cerr << e.what() << std::endl;

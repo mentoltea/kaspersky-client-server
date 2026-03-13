@@ -18,7 +18,7 @@ struct SharedData {
     }
 
     SharedData* next() const {
-        return (SharedData*)((void*)this + totalSize);
+        return (SharedData*)((char*)this + totalSize);
     }
     
     // returns adress AFTER emplaced object

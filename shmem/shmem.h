@@ -8,8 +8,10 @@ class I_SharedMemory_impl;
 
 class SharedMemory {
 public:
-    SharedMemory(const std::string& name, size_t size); // new
-    SharedMemory(const std::string& name); // existing
+    // new
+    SharedMemory(const std::string& name, size_t size); 
+    // existing
+    SharedMemory(const std::string& name);
     
     ~SharedMemory();
 

@@ -93,20 +93,29 @@ int main(int argc, char** argv) {
 
     std::cout << "File sent, waiting for results..." << std::endl;
 
-    std::string resultStr = conn.receive(4096);
-    // std::cout << resultStr << std::endl;
+    std::string resultHead = conn.receive(sizeof(uint64_t));
+    uint64_t resultSize;
+    std::memcpy(&resultSize, resultHead.data(), sizeof(uint64_t));
+
+    std::string resultStr = conn.receive(resultSize);
     json result = json::parse(resultStr);
 
     bool dangerous = result["dangerous"].get<bool>();
     std::cout << "Verdict: ";
-    if (dangerous) {
-        std::cout << "File is dangerous" << std::endl;
-    } else {
+    if (!dangerous) {
         std::cout << "File is safe" << std::endl;
+        return 0;
     }
     
-    if (result.contains("description")) {
-        std::cout << "Description: " << result["description"] << std::endl;
+    std::cout << "File is dangerous" << std::endl;
+    
+    std::vector<json> threats = result["threats"].get< std::vector<json> >();
+    
+    std::cout << "Threats:" << std::endl;
+    for (auto &threat: threats) {
+        std::cout << "\t" << "Name : " << threat["name"].get<std::string>() << std::endl;
+        std::cout << "\t" << "Description : " << threat["description"].get<std::string>() << std::endl;
+        std::cout << std::endl;
     }
 
     return 0;

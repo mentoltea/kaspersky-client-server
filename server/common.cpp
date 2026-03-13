@@ -6,7 +6,7 @@ ShmemNavigator* ShmemNavigator::initialize(void *memory, const std::vector<json>
     navigator->count = threats.size();
     
     navigator->common_offset = sizeof(ShmemNavigator);
-    ThreatCommon *commons = (ThreatCommon*) ((void*)navigator + navigator->common_offset);
+    ThreatCommon *commons = (ThreatCommon*) ((char*)navigator + navigator->common_offset);
 
     for (size_t i=0; i<navigator->count; i++) {
         auto &threat = threats[i];
@@ -31,15 +31,37 @@ ShmemNavigator* ShmemNavigator::initialize(void *memory, const std::vector<json>
     size_t aligned_common_size = (common_size + alignof(SharedData) - 1) & ~(alignof(SharedData) - 1);
 
     navigator->signature_offset = navigator->common_offset + aligned_common_size;
-    SharedData *signatures = (SharedData*) ((void*)navigator + navigator->signature_offset);
+    SharedData *signatures = (SharedData*) ((char*)navigator + navigator->signature_offset);
     SharedData::emplace(signatures, dataSignatures);
 
     return navigator;
 }
 
 void* ShmemNavigator::common() const {
-    return (void*)this + common_offset;
+    return (char*)this + common_offset;
 }
 void* ShmemNavigator::signature() const {
-    return (void*)this + signature_offset;
+    return (char*)this + signature_offset;
+}
+
+
+
+std::unique_ptr< FifoClient > connectFifo(const std::string& name, size_t attempts) {
+    std::unique_ptr< FifoClient > fifo = nullptr;
+    bool connected = false;
+    size_t failed_count = 0;
+    while (!connected) {
+        try {
+            fifo.reset(new FifoClient(std::move(FifoClient(name))));
+            connected = true;
+        } catch (std::runtime_error &e) {
+            failed_count++;
+            std::this_thread::sleep_for(
+                std::chrono::milliseconds(10)
+            );
+        }
+
+        if (failed_count >= attempts) return nullptr;
+    }
+    return fifo;
 }
